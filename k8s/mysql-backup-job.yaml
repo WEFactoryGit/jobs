@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-backup-once
+  namespace: base-server
+spec:
+  template:
+    spec:
+      containers:
+      - name: backup
+        image: registry.digitalocean.com/wechart/db-backup:0.0.1
+        command:
+          - /scripts/backup-db.sh
+          - backup
+        env:
+          - name: DB_TYPE
+            value: "mysql"
+          - name: DB_HOST
+            value: "mysql-prd.base-server.svc.cluster.local"
+          - name: DB_PORT
+            value: "3306"
+          - name: SERVICE_NAME
+            value: mysql-prd
+          - name: DB_USER
+            valueFrom:
+              secretKeyRef:
+                name: mysql-backup-prd-secrets
+                key: user
+          - name: DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-backup-prd-secrets
+                key: password
+          - name: DB_NAMES
+            value: "iotex_loxodrome"
+          - name: R2_BUCKET
+            value: db-backup
+          - name: R2_ENDPOINT
+            value: "https://2392d0b38e9dd9403cb10d4c101a0de2.r2.cloudflarestorage.com"
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: mysql-backup-prd-secrets
+                key: r2AccessKey
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: mysql-backup-prd-secrets
+                key: r2SecretKey
+      restartPolicy: OnFailure
